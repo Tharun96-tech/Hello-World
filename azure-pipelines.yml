@@ -1,0 +1,17 @@
+nodejs-pipeline:
+  stages:
+    - stage: Checkout
+      script:
+        - git clone -b main https://github.com/your-repo/nodejs-app.git
+    - stage: Install_Dependencies
+      script:
+        - npm install
+    - stage: Build
+      script:
+        - npm run build
+    - stage: Test
+      script:
+        - npm test
+    - stage: SAST_Scan
+      script:
+        - npx snyk test --severity-threshold=high
