@@ -1,0 +1,36 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  imageName: 'java-app'
+  acrName: 'ACRName'
+  acrLoginServer: 'ACRName.azurecr.io'
+
+steps:
+  - task: Maven@3
+    inputs:
+      mavenPomFile: 'pom.xml'
+      goals: 'clean package'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+    displayName: 'Build Java application with Maven'
+
+  - script: |
+      docker build -t $(acrLoginServer)/$(imageName):$(Build.BuildId) .
+    displayName: 'Build Docker image'
+
+  - task: AzureCLI@2
+    inputs:
+      azureSubscription: 'YourAzureServiceConnection'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        az acr login --name $(acrName)
+    displayName: 'Login to ACR'
+
+  - script: |
+      docker push $(acrLoginServer)/$(imageName):$(Build.BuildId)
+    displayName: 'Push Docker image to ACR'
