@@ -1,0 +1,38 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  imageName: 'nodejs-app'
+  acrName: 'ACRName'
+  acrLoginServer: 'ACRName.azurecr.io'
+
+steps:
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '18.x'
+    displayName: 'Install Node.js'
+
+  - script: |
+      npm install
+      npm run build
+    displayName: 'Install dependencies and build'
+
+  - script: |
+      docker build -t $(acrLoginServer)/$(imageName):$(Build.BuildId) .
+    displayName: 'Build Docker image'
+
+  - task: AzureCLI@2
+    inputs:
+      azureSubscription: 'YourAzureServiceConnection'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        az acr login --name $(acrName)
+    displayName: 'Login to ACR'
+
+  - script: |
+      docker push $(acrLoginServer)/$(imageName):$(Build.BuildId)
+    displayName: 'Push Docker image to ACR'
